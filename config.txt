@@ -1,0 +1,15 @@
+[connection]
+host = 127.0.0.1
+port = 8080
+
+[hardware]
+portNo  = 6
+baudrate = 115200
+engine1SlaveNo = 0
+engine2SlaveNo = 1
+engine1EasyStart = 1
+engine2EasyStart = 1
+engine1EasyStop = 1
+engine2EasyStop = 1 
+engine1EasyChange = 1
+engine2EasyChange = 1 
