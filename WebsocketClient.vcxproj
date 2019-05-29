@@ -102,10 +102,14 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>D:\CPP_Websocket\WebsocketClient\WebsocketClient\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>D:\CPP_Websocket\WebsocketClient\WebsocketClient\lib;D:\CPP_Websocket\WebsocketClient\WebsocketClient\lib\boost;D:\CPP_Websocket\WebsocketClient\WebsocketClient\lib\fastech;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -128,6 +132,7 @@
     <ClCompile Include="HardwareController.cpp" />
     <ClCompile Include="HardwareState.cpp" />
     <ClCompile Include="MessageParser.cpp" />
+    <ClCompile Include="SerialPort.cpp" />
     <ClCompile Include="Source.cpp" />
     <ClCompile Include="StdAfx.cpp" />
   </ItemGroup>
@@ -137,6 +142,8 @@
     <ClInclude Include="HardwareController.h" />
     <ClInclude Include="HardwareState.h" />
     <ClInclude Include="MessageParser.h" />
+    <ClInclude Include="Enums.h" />
+    <ClInclude Include="SerialPort.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

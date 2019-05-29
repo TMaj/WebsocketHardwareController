@@ -1,5 +1,6 @@
 #pragma once    
 #include "HardwareState.h"
+#include "Enums.h"
 
 typedef unsigned char BYTE;
 
@@ -21,17 +22,16 @@ public:
 
 	~HardwareController();
 
-	void Connect();
-
+	bool Connect(); 
 	void Disconnect();
 
-	void UpdateHardwareState(HardwareState hardwareState);
+	HardwareState UpdateHardwareState(HardwareState hardwareState);
 	void UpdateEnginesState(HardwareState update);
-
+	bool ToogleConnection(CommandType command);
 
 private:
 	/// Indicates if software is connected to engines driver
-	bool connected;
+	bool IsConnectedToEngines;
 	/// Specifies COM port on which connection to engines driver is made
 	const BYTE portNo;
 	/// Specifies engine 1 slave number

@@ -33,7 +33,7 @@ HardwareController::HardwareController(
 	spdlog::info("Created Hardware Controller to connect on portNo {} with baudrate {}", portNo, baudrate);
 
 	//Changeable engines settings 
-	this->connected = FALSE;
+	this->IsConnectedToEngines = FALSE;
 	this->engine1Direction = 1;
 	this->engine2Direction = 1;  
 	this->enginesEnabled = false;
@@ -45,56 +45,91 @@ HardwareController::~HardwareController()
 {
 }
 
-void HardwareController::Connect()
+bool HardwareController::Connect()
 {
-	if (this->connected)
+	if (this->IsConnectedToEngines)
 	{
-		return;
+		spdlog::info("Hardware Controller :: Already connected to engines.");
+		return true;
 	}
 
 	spdlog::info("Hardware Controller :: Connecting on portNo {} with baudrate {}.", this->portNo, this->baudrate);
 
 	// Connect to engines
-	if (!FAS_Connect(this->portNo, this->baudrate))
+
+	// D E B U G
+
+	// if (!FAS_Connect(this->portNo, this->baudrate))
+	if (false)
 	{
 		spdlog::error("Hardware Controller :: Connecting on portNo {} with baudrate {} failed.", this->portNo, this->baudrate);
-		return;
+		this->IsConnectedToEngines = FALSE;
+		return false;
 	}
 
-	this->SetEnginesEnabled(1);
-
-	this->connected = TRUE;
-
+	// D E B U G
+	this->enginesEnabled = true;
+	// this->SetEnginesEnabled(1); 
+	this->IsConnectedToEngines = TRUE;
+	
 	spdlog::info("Hardware Controller :: Successfully connected to engines."); 
+
+	return true;
 }
 
 void HardwareController::Disconnect()
 {
-	if (!this->connected)
+	if (!this->IsConnectedToEngines)
 	{
 		return;
 	}
 
-	this->SetEnginesEnabled(0);
+	// D E B U G
+	this->enginesEnabled = false;
+	// this->SetEnginesEnabled(0);   
+	// FAS_Close((byte)this->portNo);  
+	this->IsConnectedToEngines = FALSE;
 
-	// Disconnect engines
-	FAS_Close((byte)this->portNo); 
-	
-	this->connected = FALSE;
-
-	spdlog::info("Hardware Controller :: disconnected from engines.");
+	spdlog::info("Hardware Controller :: Disconnected from engines.");
 }
 
-void HardwareController::UpdateHardwareState(HardwareState update)
+bool HardwareController::ToogleConnection(CommandType command)
+{
+	switch (command)
+	{
+		case CommandType::Connect:
+		{
+			this->Connect();
+			return this->IsConnectedToEngines; 
+		}
+		case CommandType::Disconnect:
+		{
+			this->Disconnect();
+			return this->IsConnectedToEngines;
+		}
+	}
+
+	return false;
+}
+
+HardwareState HardwareController::UpdateHardwareState(HardwareState update)
 {
 	// Set engines parameters
-	if (!this->connected)
+	if (!this->IsConnectedToEngines)
 	{
 		spdlog::warn("Hardware Controller :: Attempted to change engine parameters while they were not connected.");
-		return;
+		return HardwareState();
 	}
 
 	this->UpdateEnginesState(update);
+
+	auto returnedState = HardwareState();
+	returnedState.Engine1Direction = this->engine1Direction;
+	returnedState.Engine2Direction = this->engine2Direction;
+	returnedState.Engine1Speed = this->engine1Speed;
+	returnedState.Engine2Speed = this->engine2Speed;
+
+	return returnedState;
 }
 
 void HardwareController::UpdateEnginesState(HardwareState update)
@@ -129,8 +164,8 @@ void HardwareController::UpdateEnginesState(HardwareState update)
 
 	if (!this->enginesEnabled)
 	{
-		spdlog::error("Hardware Controller :: Attempted to change engine parameters while they were not enabled."); 
-		return;
+		spdlog::warn("Hardware Controller :: Attempted to change engine parameters while they were not enabled. Enabling..."); 
+		this->SetEnginesEnabled(true);
 	} 
 
 	if (engine1Starting && engine2Starting)
@@ -186,17 +221,29 @@ void HardwareController::UpdateEnginesState(HardwareState update)
 
 void HardwareController::SetEnginesEnabled(int enabled)
 {
+	int result1 = 0;
+	int result2 = 0;
+
 	if (FAS_IsSlaveExist((byte)this->portNo, this->engine1SlaveNo))
 	{
-		FAS_ServoEnable(this->portNo, this->engine1SlaveNo, enabled);
+		result1 = FAS_ServoEnable(this->portNo, this->engine1SlaveNo, enabled);
 	}
 
 	if (FAS_IsSlaveExist((byte)this->portNo, this->engine2SlaveNo))
 	{
-		FAS_ServoEnable(this->portNo, this->engine2SlaveNo, enabled);
+		result2 = FAS_ServoEnable(this->portNo, this->engine2SlaveNo, enabled);
 	}
 
-	this->enginesEnabled = enabled;
+	if (result1 == FMM_OK && result2 == FMM_OK)
+	{
+		spdlog::info("Hardware Controller :: Both engines enabled flag has been sucessfully set to {}", enabled);
+		this->enginesEnabled = enabled;
+	}
+	else
+	{
+		spdlog::error("Hardware Controller :: Attempt to set engines enabled flag to {} failed", enabled);
+		this->enginesEnabled = !enabled;
+	} 
 }
 
 void HardwareController::StartEngine(int engineSlaveNo)

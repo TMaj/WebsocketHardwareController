@@ -1,11 +1,16 @@
 #pragma once
 #include <string>
 #include "HardwareState.h"
+#include "Enums.h"
 
 class MessageParser
 {
 public:
-	HardwareState ParseFromJson(std::string);
-	std::string ParseToJson(HardwareState);
+	HardwareState ParseToHardwareState(std::string);
+	std::string ParseToUpdate(HardwareState);
+	std::string ParseToConnectionsState(bool connectedToEngines);
+	std::string ParseToTemperatureState(std::string temperature);
+	MessageType GetMessageType(std::string message);
+	CommandType GetCommandType(std::string message);
 };
 
