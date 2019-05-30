@@ -77,13 +77,13 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>D:\CPP_Websocket\WebsocketClient\WebsocketClient\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Tomasz\Documents\WebsocketClient\WebsocketClient\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ShowIncludes>false</ShowIncludes>
       <PreprocessorDefinitions>_WIN32_WINNT=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>D:\CPP_Websocket\WebsocketClient\WebsocketClient\lib\fastech;D:\CPP_Websocket\WebsocketClient\WebsocketClient\lib\boost;D:\CPP_Websocket\WebsocketClient\WebsocketClient\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\Tomasz\Documents\WebsocketClient\WebsocketClient\lib;C:\Users\Tomasz\Documents\WebsocketClient\WebsocketClient\lib\fastech;C:\Users\Tomasz\Documents\WebsocketClient\WebsocketClient\lib\boost</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -102,14 +102,14 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>D:\CPP_Websocket\WebsocketClient\WebsocketClient\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Tomasz\Documents\WebsocketClient\WebsocketClient\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>D:\CPP_Websocket\WebsocketClient\WebsocketClient\lib;D:\CPP_Websocket\WebsocketClient\WebsocketClient\lib\boost;D:\CPP_Websocket\WebsocketClient\WebsocketClient\lib\fastech;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\Tomasz\Documents\WebsocketClient\WebsocketClient\lib;C:\Users\Tomasz\Documents\WebsocketClient\WebsocketClient\lib\fastech;C:\Users\Tomasz\Documents\WebsocketClient\WebsocketClient\lib\boost</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -129,9 +129,10 @@
   <ItemGroup>
     <ClCompile Include="Chameleon.cpp" />
     <ClCompile Include="ConfigFile.cpp" />
-    <ClCompile Include="HardwareController.cpp" />
+    <ClCompile Include="EnginesController.cpp" />
     <ClCompile Include="HardwareState.cpp" />
     <ClCompile Include="MessageParser.cpp" />
+    <ClCompile Include="PowerController.cpp" />
     <ClCompile Include="SerialPort.cpp" />
     <ClCompile Include="Source.cpp" />
     <ClCompile Include="StdAfx.cpp" />
@@ -139,11 +140,15 @@
   <ItemGroup>
     <ClInclude Include="Chameleon.h" />
     <ClInclude Include="ConfigFile.h" />
-    <ClInclude Include="HardwareController.h" />
+    <ClInclude Include="EnginesController.h" />
     <ClInclude Include="HardwareState.h" />
     <ClInclude Include="MessageParser.h" />
     <ClInclude Include="Enums.h" />
+    <ClInclude Include="PowerController.h" />
     <ClInclude Include="SerialPort.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Icon.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

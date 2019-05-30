@@ -2,9 +2,15 @@
 host = 127.0.0.1
 port = 8080
 
-[hardware]
-portNo  = 6
-baudrate = 115200
+[serial ports]
+enginesPortNo = 6
+enginesPortBaudrate = 115200
+arduinoPortName = COM5
+arduinoPortBaudrate = 9600
+powerSupplyPortName = COM7
+powerSupplyPortBaudrate = 9600
+
+[engines]
 engine1SlaveNo = 0
 engine2SlaveNo = 1
 engine1EasyStart = 1

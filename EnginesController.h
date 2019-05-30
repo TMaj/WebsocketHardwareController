@@ -1,13 +1,14 @@
 #pragma once    
 #include "HardwareState.h"
-#include "Enums.h"
+#include "Enums.h"   
+#include <math.h> 
 
 typedef unsigned char BYTE;
 
-class HardwareController
+class EnginesController
 {
 public: 
-	HardwareController(
+	EnginesController(
 		int portNo,
 		int baudrate, 
 		int engine1SlaveNo,
@@ -20,7 +21,7 @@ public:
 		int engine2EasyChange
 		);
 
-	~HardwareController();
+	~EnginesController();
 
 	bool Connect(); 
 	void Disconnect();
