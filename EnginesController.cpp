@@ -1,4 +1,4 @@
-#include "HardwareController.h" 
+#include "EnginesController.h" 
 
 #include <fastech/StdAfx.h>
 #include <iostream> 
@@ -8,44 +8,44 @@
 #include <fastech/ReturnCodes_Define.h>
 #include <spdlog/spdlog.h>  
 
-HardwareController::HardwareController(
+EnginesController::EnginesController(
 	int portNo,
-	int baudrate, 
+	int baudrate,
 	int engine1SlaveNo,
 	int engine2SlaveNo,
 	int engine1EasyStart,
 	int engine2EasyStart,
 	int engine1EasyStop,
-	int engine2EasyStop, 
+	int engine2EasyStop,
 	int engine1EasyChange,
 	int engine2EasyChange
 ) : portNo(portNo),
-	baudrate((unsigned long)baudrate), 
-	engine1SlaveNo(engine1SlaveNo),
-	engine2SlaveNo(engine2SlaveNo),
-	engine1EasyStart(engine1EasyStart),
-	engine2EasyStart(engine2EasyStart),
-	engine1EasyStop(engine1EasyStop),
-	engine2EasyStop(engine2EasyStop),
-	engine1EasyChange(engine1EasyChange),
-	engine2EasyChange(engine2EasyChange)
+baudrate((unsigned long)baudrate),
+engine1SlaveNo(engine1SlaveNo),
+engine2SlaveNo(engine2SlaveNo),
+engine1EasyStart(engine1EasyStart),
+engine2EasyStart(engine2EasyStart),
+engine1EasyStop(engine1EasyStop),
+engine2EasyStop(engine2EasyStop),
+engine1EasyChange(engine1EasyChange),
+engine2EasyChange(engine2EasyChange)
 {
 	spdlog::info("Created Hardware Controller to connect on portNo {} with baudrate {}", portNo, baudrate);
 
 	//Changeable engines settings 
 	this->IsConnectedToEngines = FALSE;
 	this->engine1Direction = 1;
-	this->engine2Direction = 1;  
+	this->engine2Direction = 1;
 	this->enginesEnabled = false;
 	this->engine1Speed = 0;
 	this->engine2Speed = 0;
 }
 
-HardwareController::~HardwareController()
+EnginesController::~EnginesController()
 {
 }
 
-bool HardwareController::Connect()
+bool EnginesController::Connect()
 {
 	if (this->IsConnectedToEngines)
 	{
@@ -59,8 +59,8 @@ bool HardwareController::Connect()
 
 	// D E B U G
 
-	// if (!FAS_Connect(this->portNo, this->baudrate))
-	if (false)
+	//if (false)
+	if (!FAS_Connect(this->portNo, this->baudrate))
 	{
 		spdlog::error("Hardware Controller :: Connecting on portNo {} with baudrate {} failed.", this->portNo, this->baudrate);
 		this->IsConnectedToEngines = FALSE;
@@ -68,16 +68,16 @@ bool HardwareController::Connect()
 	}
 
 	// D E B U G
-	this->enginesEnabled = true;
-	// this->SetEnginesEnabled(1); 
+	//this->enginesEnabled = true;
+	this->SetEnginesEnabled(1);
 	this->IsConnectedToEngines = TRUE;
-	
-	spdlog::info("Hardware Controller :: Successfully connected to engines."); 
+
+	spdlog::info("Hardware Controller :: Successfully connected to engines.");
 
 	return true;
 }
 
-void HardwareController::Disconnect()
+void EnginesController::Disconnect()
 {
 	if (!this->IsConnectedToEngines)
 	{
@@ -85,34 +85,34 @@ void HardwareController::Disconnect()
 	}
 
 	// D E B U G
-	this->enginesEnabled = false;
-	// this->SetEnginesEnabled(0);   
-	// FAS_Close((byte)this->portNo);  
+	//this->enginesEnabled = false;
+	this->SetEnginesEnabled(0);
+	FAS_Close((byte)this->portNo);
 	this->IsConnectedToEngines = FALSE;
 
 	spdlog::info("Hardware Controller :: Disconnected from engines.");
 }
 
-bool HardwareController::ToogleConnection(CommandType command)
+bool EnginesController::ToogleConnection(CommandType command)
 {
 	switch (command)
 	{
-		case CommandType::Connect:
-		{
-			this->Connect();
-			return this->IsConnectedToEngines; 
-		}
-		case CommandType::Disconnect:
-		{
-			this->Disconnect();
-			return this->IsConnectedToEngines;
-		}
+	case CommandType::Connect:
+	{
+		this->Connect();
+		return this->IsConnectedToEngines;
+	}
+	case CommandType::Disconnect:
+	{
+		this->Disconnect();
+		return this->IsConnectedToEngines;
+	}
 	}
 
 	return false;
 }
 
-HardwareState HardwareController::UpdateHardwareState(HardwareState update)
+HardwareState EnginesController::UpdateHardwareState(HardwareState update)
 {
 	// Set engines parameters
 	if (!this->IsConnectedToEngines)
@@ -132,8 +132,8 @@ HardwareState HardwareController::UpdateHardwareState(HardwareState update)
 	return returnedState;
 }
 
-void HardwareController::UpdateEnginesState(HardwareState update)
-{  
+void EnginesController::UpdateEnginesState(HardwareState update)
+{
 	long actualEngine1Speed = 0;
 	long actualEngine2Speed = 0;
 	FAS_GetActualVel(this->portNo, this->engine1SlaveNo, &actualEngine1Speed);
@@ -164,9 +164,9 @@ void HardwareController::UpdateEnginesState(HardwareState update)
 
 	if (!this->enginesEnabled)
 	{
-		spdlog::warn("Hardware Controller :: Attempted to change engine parameters while they were not enabled. Enabling..."); 
+		spdlog::warn("Hardware Controller :: Attempted to change engine parameters while they were not enabled. Enabling...");
 		this->SetEnginesEnabled(true);
-	} 
+	}
 
 	if (engine1Starting && engine2Starting)
 	{
@@ -219,10 +219,16 @@ void HardwareController::UpdateEnginesState(HardwareState update)
 	}
 }
 
-void HardwareController::SetEnginesEnabled(int enabled)
+void EnginesController::SetEnginesEnabled(int enabled)
 {
 	int result1 = 0;
 	int result2 = 0;
+
+	if (!enabled)
+	{
+		result1 = FAS_MoveStop(this->portNo, this->engine1SlaveNo);
+		result2 = FAS_MoveStop(this->portNo, this->engine2SlaveNo);
+	}
 
 	if (FAS_IsSlaveExist((byte)this->portNo, this->engine1SlaveNo))
 	{
@@ -243,10 +249,10 @@ void HardwareController::SetEnginesEnabled(int enabled)
 	{
 		spdlog::error("Hardware Controller :: Attempt to set engines enabled flag to {} failed", enabled);
 		this->enginesEnabled = !enabled;
-	} 
+	}
 }
 
-void HardwareController::StartEngine(int engineSlaveNo)
+void EnginesController::StartEngine(int engineSlaveNo)
 {
 	int result;
 	int engineSpeed;
@@ -254,13 +260,13 @@ void HardwareController::StartEngine(int engineSlaveNo)
 	bool easyStart;
 
 	if (engineSlaveNo == this->engine1SlaveNo)
-	{ 
+	{
 		engineSpeed = this->engine1Speed;
 		engineDirection = this->engine1Direction;
 		easyStart = this->engine1EasyStart;
 	}
-	else 
-	{ 
+	else
+	{
 		engineSpeed = this->engine2Speed;
 		engineDirection = this->engine2Direction;
 		easyStart = this->engine2EasyStart;
@@ -272,23 +278,23 @@ void HardwareController::StartEngine(int engineSlaveNo)
 	}
 	else
 	{
-		int speed = 0;
+		double speed = 0;
 		int maxSpeed = engineSpeed;
 		int iterations = 200;
-		int velocityStep = int(maxSpeed / iterations);
+		double velocityStep = (double)maxSpeed / iterations;
 		speed = velocityStep;
-		result = FAS_MoveVelocity(this->portNo, engineSlaveNo, speed, engineDirection);
+		result = FAS_MoveVelocity(this->portNo, engineSlaveNo, (int)ceil(speed), engineDirection);
 
 		for (int i = 1; i < iterations; i++)
 		{
 			speed += velocityStep;
-			result = FAS_VelocityOverride(this->portNo, engineSlaveNo, speed);
+			result = FAS_VelocityOverride(this->portNo, engineSlaveNo, (int)ceil(speed));
 			Sleep(10);
-		} 
-	} 
-}  
+		}
+	}
+}
 
-void HardwareController::StartEngines()
+void EnginesController::StartEngines()
 {
 	int result;
 
@@ -304,7 +310,7 @@ void HardwareController::StartEngines()
 
 		int maxSpeed1 = this->engine1Speed;
 		int maxSpeed2 = this->engine2Speed;
-		
+
 		int iterations = 200;
 
 		int velocityStep1 = int(maxSpeed1 / iterations);
@@ -323,25 +329,25 @@ void HardwareController::StartEngines()
 			result = FAS_VelocityOverride(this->portNo, this->engine1SlaveNo, speed1);
 			result = FAS_VelocityOverride(this->portNo, this->engine2SlaveNo, speed2);
 			Sleep(10);
-		} 
+		}
 	}
 }
 
-void HardwareController::StopEngine(int engineSlaveNo, int previousSpeed)
-{ 
+void EnginesController::StopEngine(int engineSlaveNo, int previousSpeed)
+{
 	int result;
 	int engineSpeed;
 	int engineDirection;
 	bool easyStop;
 
 	if (engineSlaveNo == this->engine1SlaveNo)
-	{ 
+	{
 		engineSpeed = this->engine1Speed;
 		engineDirection = this->engine1Direction;
 		easyStop = this->engine1EasyStop;
 	}
 	else
-	{ 
+	{
 		engineSpeed = this->engine2Speed;
 		engineDirection = this->engine2Direction;
 		easyStop = this->engine2EasyStop;
@@ -352,25 +358,25 @@ void HardwareController::StopEngine(int engineSlaveNo, int previousSpeed)
 		result = FAS_MoveStop(this->portNo, engineSlaveNo);
 	}
 	else
-	{ 
+	{
 		int speed = 0;
 		int maxSpeed = previousSpeed;
 		int iterations = 200;
-		int velocityStep = int(maxSpeed / iterations); 
-		speed = maxSpeed; 
+		int velocityStep = int(maxSpeed / iterations);
+		speed = maxSpeed;
 
 		for (int i = 1; i < iterations; i++)
 		{
 			speed -= velocityStep;
 			result = FAS_VelocityOverride(this->portNo, engineSlaveNo, speed);
 			Sleep(10);
-		} 
+		}
 
 		result = FAS_MoveStop(this->portNo, engineSlaveNo);
 	}
 }
 
-void HardwareController::StopEngines(int previousSpeed1, int previousSpeed2)
+void EnginesController::StopEngines(int previousSpeed1, int previousSpeed2)
 {
 	int result;
 
@@ -402,15 +408,15 @@ void HardwareController::StopEngines(int previousSpeed1, int previousSpeed2)
 			result = FAS_VelocityOverride(this->portNo, this->engine1SlaveNo, speed1);
 			result = FAS_VelocityOverride(this->portNo, this->engine2SlaveNo, speed2);
 			Sleep(10);
-		} 
+		}
 
 		result = FAS_MoveStop(this->portNo, this->engine1SlaveNo);
 		result = FAS_MoveStop(this->portNo, this->engine2SlaveNo);
 	}
 }
 
-void HardwareController::ChangeEngineSpeed(int engineSlaveNo, int previousSpeed)
-{  
+void EnginesController::ChangeEngineSpeed(int engineSlaveNo, int previousSpeed)
+{
 	int result;
 	int engineSpeed;
 	int engineDirection;
@@ -420,14 +426,14 @@ void HardwareController::ChangeEngineSpeed(int engineSlaveNo, int previousSpeed)
 	{
 		engineSpeed = this->engine1Speed;
 		engineDirection = this->engine1Direction;
-		easyChange = this->engine1EasyChange; 
+		easyChange = this->engine1EasyChange;
 	}
 	else
 	{
 		engineSpeed = this->engine2Speed;
 		engineDirection = this->engine2Direction;
 		easyChange = this->engine2EasyChange;
-	} 
+	}
 
 	if (engineSpeed == 0)
 	{
@@ -439,23 +445,24 @@ void HardwareController::ChangeEngineSpeed(int engineSlaveNo, int previousSpeed)
 		result = FAS_VelocityOverride(this->portNo, engineSlaveNo, engineSpeed);
 	}
 	else
-	{ 
-		int speed = 0;
+	{
+		double speed = 0;
 		int speedChange = engineSpeed - previousSpeed;
 		int iterations = 100;
-		int velocityStep = int(speedChange / iterations);
-		speed = previousSpeed + velocityStep;
+		double velocityStep = (double)speedChange / iterations;
+		speed = (double)previousSpeed + velocityStep;
 
 		for (int i = 1; i < iterations; i++)
-		{ 
-			speed += velocityStep; 	
-			result = FAS_VelocityOverride(this->portNo, engineSlaveNo, speed);
+		{
+			speed += velocityStep;
+			auto s = (int)ceil(speed);
+			result = FAS_VelocityOverride(this->portNo, engineSlaveNo, (int)ceil(speed));
 			Sleep(10);
 		}
 	}
 }
 
-void HardwareController::ChangeEnginesSpeed(int previousSpeed1, int previousSpeed2)
+void EnginesController::ChangeEnginesSpeed(int previousSpeed1, int previousSpeed2)
 {
 	int result;
 
@@ -492,6 +499,6 @@ void HardwareController::ChangeEnginesSpeed(int previousSpeed1, int previousSpee
 			result = FAS_VelocityOverride(this->portNo, this->engine1SlaveNo, speed1);
 			result = FAS_VelocityOverride(this->portNo, this->engine2SlaveNo, speed2);
 			Sleep(10);
-		} 
+		}
 	}
 }

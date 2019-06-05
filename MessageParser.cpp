@@ -40,7 +40,7 @@ std::string MessageParser::ParseToUpdate(HardwareState state)
 	return json.dump();
 }
 
-std::string MessageParser::ParseToConnectionsState(bool connectedToEngines)
+std::string MessageParser::ParseToEngineConnectionState(bool connectedToEngines)
 {
 	json j;
 
@@ -48,7 +48,7 @@ std::string MessageParser::ParseToConnectionsState(bool connectedToEngines)
 	j["connectedToEngines"] = connectedToEngines;
 
 	return j.dump();
-}
+} 
 
 std::string MessageParser::ParseToTemperatureState(std::string temperature)
 {

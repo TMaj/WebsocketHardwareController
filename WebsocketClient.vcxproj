@@ -129,9 +129,10 @@
   <ItemGroup>
     <ClCompile Include="Chameleon.cpp" />
     <ClCompile Include="ConfigFile.cpp" />
-    <ClCompile Include="HardwareController.cpp" />
+    <ClCompile Include="EnginesController.cpp" />
     <ClCompile Include="HardwareState.cpp" />
     <ClCompile Include="MessageParser.cpp" />
+    <ClCompile Include="PowerController.cpp" />
     <ClCompile Include="SerialPort.cpp" />
     <ClCompile Include="Source.cpp" />
     <ClCompile Include="StdAfx.cpp" />
@@ -139,11 +140,15 @@
   <ItemGroup>
     <ClInclude Include="Chameleon.h" />
     <ClInclude Include="ConfigFile.h" />
-    <ClInclude Include="HardwareController.h" />
+    <ClInclude Include="EnginesController.h" />
     <ClInclude Include="HardwareState.h" />
     <ClInclude Include="MessageParser.h" />
     <ClInclude Include="Enums.h" />
+    <ClInclude Include="PowerController.h" />
     <ClInclude Include="SerialPort.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Icon.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

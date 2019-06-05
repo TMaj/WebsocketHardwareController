@@ -1,5 +1,6 @@
-#include "HardwareController.h" 
-#include "MessageParser.h"
+#include "EnginesController.h" 
+#include "MessageParser.h"  
+#include "PowerController.h"
 
 #include <cstdlib>
 #include <iostream>
@@ -29,14 +30,16 @@ class MessageHandler {
 
 	websocket::stream<tcp::socket>* websocket;  
 	MessageParser messageParser;
-	HardwareController* hardwareController;
+	EnginesController* enginesController;
+	PowerController* powerController;
 
 public:
-	MessageHandler(websocket::stream<tcp::socket>* ws,  HardwareController* hardwareController)
+	MessageHandler(websocket::stream<tcp::socket>* ws,  EnginesController* enginesController, PowerController* powerController)
 	{
 		spdlog::info("Constructing message handler");
 		this->websocket = ws;  
-		this->hardwareController = hardwareController;
+		this->enginesController = enginesController;
+		this->powerController = powerController;
 	} 
 
 	void handleMessages()
@@ -60,17 +63,18 @@ public:
 				switch (messageType)
 				{
 					case MessageType::Update:
-					{
+					{ 
 						auto stateUpdate = this->messageParser.ParseToHardwareState(messageString);
-						auto returnedState = this->hardwareController->UpdateHardwareState(stateUpdate); 
+						auto returnedState = this->enginesController->UpdateHardwareState(stateUpdate);
+						//this->powerController->UpdatePowerState(stateUpdate);
 						this->websocket->write(net::buffer(messageParser.ParseToUpdate(returnedState)));
 						break;
 					}
 					case MessageType::Command: 
 					{
 						auto commandType = this->messageParser.GetCommandType(messageString);
-						auto connectionState = this->hardwareController->ToogleConnection(commandType); 
-						this->websocket->write(net::buffer(messageParser.ParseToConnectionsState(connectionState)));
+						auto connectionState = this->enginesController->ToogleConnection(commandType); 
+						this->websocket->write(net::buffer(messageParser.ParseToEngineConnectionState(connectionState)));
 						break;
 					}
 				} 
@@ -90,12 +94,14 @@ class ArduinoHandler {
 	websocket::stream<tcp::socket>* websocket;
 	MessageParser messageParser; 
 	std::string portName;
+	int baudrate;
 
 public:
-	ArduinoHandler(websocket::stream<tcp::socket>* ws, std::string portName)
+	ArduinoHandler(websocket::stream<tcp::socket>* ws, std::string portName, int arduinoPortBaudrate)
 	{
 		this->websocket = ws;
 		this->portName = portName;
+		this->baudrate = arduinoPortBaudrate;
 	}
 
 	void handleSerial()
@@ -104,10 +110,11 @@ public:
 		net::serial_port port(io);
 
 		try
-		{ 
-			port.open(this->portName);
-			port.set_option(net::serial_port_base::baud_rate(9600)); 
-			
+		{  
+			port.open(this->portName); 
+			port.set_option(net::serial_port_base::baud_rate(this->baudrate)); 
+			PurgeComm(port.lowest_layer().native_handle(), PURGE_RXABORT | PURGE_TXABORT | PURGE_RXCLEAR | PURGE_TXCLEAR);
+
 			for (;;)
 			{
 				char c;
@@ -143,20 +150,25 @@ int main(int argc, char** argv)
 
 		std::string host = cf.Value("connection", "host");
 		std::string port = cf.Value("connection", "port");
-		std::string portNo = cf.Value("hardware", "portNo");
-		std::string baudrate = cf.Value("hardware", "baudrate");
-		std::string engine1SlaveNo = cf.Value("hardware", "engine1SlaveNo");
-		std::string engine2SlaveNo = cf.Value("hardware", "engine2SlaveNo"); 
-		std::string engine1EasyStart = cf.Value("hardware", "engine1EasyStart");
-		std::string engine2EasyStart = cf.Value("hardware", "engine2EasyStart");
-		std::string engine1EasyStop = cf.Value("hardware", "engine1EasyStop");
-		std::string engine2EasyStop = cf.Value("hardware", "engine2EasyStop");
-		std::string engine1EasyChange = cf.Value("hardware", "engine1EasyChange");
-		std::string engine2EasyChange = cf.Value("hardware", "engine2EasyChange"); 
+		std::string enginesPortNo = cf.Value("serial ports", "enginesPortNo");
+		std::string enginesPortBaudrate = cf.Value("serial ports", "enginesPortBaudrate");
+		std::string arduinoPortName = cf.Value("serial ports", "arduinoPortName");
+		std::string arduinoPortBaudrate = cf.Value("serial ports", "arduinoPortBaudrate");
+		std::string powerSupplyPortName = cf.Value("serial ports", "powerSupplyPortName");
+		std::string powerSupplyPortBaudrate = cf.Value("serial ports", "powerSupplyPortBaudrate");
 
-		HardwareController hardwareController(
-			std::stoi(portNo),
-			std::stoi(baudrate),
+		std::string engine1SlaveNo = cf.Value("engines", "engine1SlaveNo");
+		std::string engine2SlaveNo = cf.Value("engines", "engine2SlaveNo"); 
+		std::string engine1EasyStart = cf.Value("engines", "engine1EasyStart");
+		std::string engine2EasyStart = cf.Value("engines", "engine2EasyStart");
+		std::string engine1EasyStop = cf.Value("engines", "engine1EasyStop");
+		std::string engine2EasyStop = cf.Value("engines", "engine2EasyStop");
+		std::string engine1EasyChange = cf.Value("engines", "engine1EasyChange");
+		std::string engine2EasyChange = cf.Value("engines", "engine2EasyChange"); 
+
+		EnginesController enginesController(
+			std::stoi(enginesPortNo),
+			std::stoi(enginesPortBaudrate),
 			std::stoi(engine1SlaveNo),
 			std::stoi(engine2SlaveNo),
 			std::stoi(engine1EasyStart),
@@ -165,9 +177,10 @@ int main(int argc, char** argv)
 			std::stoi(engine2EasyStop),
 			std::stoi(engine1EasyChange),
 			std::stoi(engine2EasyChange)
-		); 
+		);  
 
-		MessageParser messageParser;
+		net::io_service io;
+		PowerController powerController(powerSupplyPortName, std::stoi(powerSupplyPortBaudrate), &io);
 
 		for (;;)
 		{ 
@@ -198,13 +211,10 @@ int main(int argc, char** argv)
 				// Perform the websocket handshake
 				ws.handshake(host, "/"); 
 				
-				spdlog::info("Successfully connected to websocket server {} on port {}", host, port);
-				 
-				/*auto isConnectedToEngines = hardwareController.Connect();
-				ws.write(net::buffer(messageParser.ParseToConnectionsState(true)));*/
+				spdlog::info("Successfully connected to websocket server {} on port {}", host, port);  
 
-				std::thread t(&MessageHandler::handleMessages, MessageHandler(&ws, &hardwareController));  
-				std::thread t2(&ArduinoHandler::handleSerial, ArduinoHandler(&ws, "COM5"));
+				std::thread t(&MessageHandler::handleMessages, MessageHandler(&ws, &enginesController, &powerController));  
+				std::thread t2(&ArduinoHandler::handleSerial, ArduinoHandler(&ws, arduinoPortName, std::stoi(arduinoPortBaudrate)));
 
 				t.join(); 
 				t2.join();
