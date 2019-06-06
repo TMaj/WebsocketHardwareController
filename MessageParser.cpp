@@ -4,6 +4,17 @@
 
 using namespace nlohmann;
 
+/// Parsing from engine-specific unit (pulses per second) to common unit (rotations per minute)
+double ParseFromPPStoRPM(int pps)
+{
+	return (double)(pps * 0.006);
+}
+/// Parsing from common unit to  engine specific unit
+int ParseFromRPMtoPPS(double rpm)
+{
+	return (int)(rpm * 166.666667);
+}
+
 HardwareState MessageParser::ParseToHardwareState(std::string message)
 {
 	try
@@ -12,11 +23,11 @@ HardwareState MessageParser::ParseToHardwareState(std::string message)
 		spdlog::info(json.dump());
 	
 		auto state = HardwareState();  
-		state.DesiredTemperature = std::stoi(json["desiredTemperature"].get<std::string>());
-		state.Engine1Direction = std::stoi(json["engine1Direction"].get<std::string>());
-		state.Engine1Speed = std::stoi(json["engine1Speed"].get<std::string>());
-		state.Engine2Direction = std::stoi(json["engine2Direction"].get<std::string>());
-		state.Engine2Speed = std::stoi(json["engine2Speed"].get<std::string>()); 
+		state.DesiredTemperature = json["desiredTemperature"].get<int>();
+		state.Engine1Direction = json["engine1Direction"].get<int>();
+		state.Engine1Speed = ParseFromRPMtoPPS(json["engine1Speed"].get<double>());
+		state.Engine2Direction = json["engine2Direction"].get<int>();
+		state.Engine2Speed = ParseFromRPMtoPPS(json["engine2Speed"].get<double>());
 
 		spdlog::info("Parsed message dt: {} e1d: {} e1s:{} e2d: {} e2s: {}", state.DesiredTemperature, state.Engine1Direction, state.Engine1Speed, state.Engine2Direction, state.Engine2Speed);
 
@@ -32,10 +43,10 @@ std::string MessageParser::ParseToUpdate(HardwareState state)
 {
 	json json;
 	json["type"] = "update";
-	json["engine1Direction"] = std::to_string(state.Engine1Direction);
-	json["engine2Direction"] = std::to_string(state.Engine2Direction);
-	json["engine1Speed"] = std::to_string(state.Engine1Speed);
-	json["engine2Speed"] = std::to_string(state.Engine2Speed);
+	json["engine1Direction"] = state.Engine1Direction;
+	json["engine2Direction"] = state.Engine2Direction;
+	json["engine1Speed"] = ParseFromPPStoRPM(state.Engine1Speed);
+	json["engine2Speed"] = ParseFromPPStoRPM(state.Engine2Speed);
 
 	return json.dump();
 }

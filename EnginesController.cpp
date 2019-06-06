@@ -99,13 +99,15 @@ bool EnginesController::ToogleConnection(CommandType command)
 	{
 	case CommandType::Connect:
 	{
-		this->Connect();
-		return this->IsConnectedToEngines;
+		return true;
+		/*this->Connect();
+		return this->IsConnectedToEngines;*/
 	}
 	case CommandType::Disconnect:
 	{
-		this->Disconnect();
-		return this->IsConnectedToEngines;
+		return false;
+	/*	this->Disconnect();
+		return this->IsConnectedToEngines;*/
 	}
 	}
 
