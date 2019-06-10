@@ -71,6 +71,8 @@ private:
 
 	void StopEngine(int engineSlaveNo, int previousSpeed);
 	void StopEngines(int previousSpeed1, int previousSpeed2);
-	void ChangeEngineSpeed(int engineSlaveNo, int previousSpeed);
-	void ChangeEnginesSpeed(int previousSpeed1, int previousSpeed2);
+	void ChangeEngineSpeed(int engineSlaveNo, int previousSpeed, int previousDirection);
+	void ChangeEnginesSpeed(int previousSpeed1, int previousSpeed2, int previousDirection1, int previousDirection2);
+	void ChangeEngineDirection(int engineSlaveNo, int previousSpeed);
+	void ChangeEnginesDirection(int previousSpeed1, int previousSpeed2);
 };

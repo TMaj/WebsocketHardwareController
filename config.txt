@@ -7,7 +7,7 @@ enginesPortNo = 6
 enginesPortBaudrate = 115200
 arduinoPortName = COM5
 arduinoPortBaudrate = 9600
-powerSupplyPortName = COM2
+powerSupplyPortName = COM7
 powerSupplyPortBaudrate = 9600
 
 [engines]
@@ -15,7 +15,7 @@ engine1SlaveNo = 0
 engine2SlaveNo = 1
 engine1EasyStart = 1
 engine2EasyStart = 1
-engine1EasyStop = 1
-engine2EasyStop = 1 
+engine1EasyStop = 0
+engine2EasyStop = 0 
 engine1EasyChange = 1
 engine2EasyChange = 1 

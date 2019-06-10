@@ -99,15 +99,15 @@ bool EnginesController::ToogleConnection(CommandType command)
 	{
 	case CommandType::Connect:
 	{
-		return true;
-		/*this->Connect();
-		return this->IsConnectedToEngines;*/
+		//return true;
+		this->Connect();
+		return this->IsConnectedToEngines;
 	}
 	case CommandType::Disconnect:
 	{
-		return false;
-	/*	this->Disconnect();
-		return this->IsConnectedToEngines;*/
+		//return false;
+		this->Disconnect();
+		return this->IsConnectedToEngines;
 	}
 	}
 
@@ -153,11 +153,16 @@ void EnginesController::UpdateEnginesState(HardwareState update)
 	bool engine2Starting = this->engine2Speed <= 0 && update.Engine2Speed > 0;
 	bool engine2Stopping = this->engine2Speed > 0 && update.Engine2Speed <= 0;
 
-	bool engine1SpeedChanged = this->engine1Speed != update.Engine1Speed;
-	bool engine2SpeedChanged = this->engine2Speed != update.Engine2Speed;
+	bool engine1SpeedChanged = abs(this->engine1Speed - update.Engine1Speed) > 3;
+	bool engine2SpeedChanged = abs(this->engine2Speed - update.Engine2Speed) > 3;
+
+	bool engine1DirectionChanged = this->engine1Direction != update.Engine1Direction;
+	bool engine2DirectionChanged = this->engine2Direction != update.Engine2Direction;
 
 	int previousEngine1Speed = this->engine1Speed;
 	int previousEngine2Speed = this->engine2Speed;
+	int previousEngine1Direction = this->engine1Direction;
+	int previousEngine2Direction = this->engine2Direction;
 
 	this->engine1Speed = update.Engine1Speed;
 	this->engine2Speed = update.Engine2Speed;
@@ -172,51 +177,81 @@ void EnginesController::UpdateEnginesState(HardwareState update)
 
 	if (engine1Starting && engine2Starting)
 	{
+		spdlog::warn("Hardware Controller :: Starting both engines...");
 		StartEngines();
 		return;
 	}
 
 	if (engine1Stopping && engine2Stopping)
 	{
+		spdlog::warn("Hardware Controller :: Stopping both engines...");
 		StopEngines(previousEngine1Speed, previousEngine2Speed);
 		return;
 	}
 
 	if (engine1Starting)
 	{
+		spdlog::warn("Hardware Controller :: Starting engine 1...");
 		StartEngine(this->engine1SlaveNo);
 	}
 
 	if (engine2Starting)
 	{
+		spdlog::warn("Hardware Controller :: Starting engine 2...");
 		StartEngine(this->engine2SlaveNo);
 	}
 
 	if (engine1Stopping)
 	{
+		spdlog::warn("Hardware Controller :: Stopping engine 1...");
 		StopEngine(this->engine1SlaveNo, previousEngine1Speed);
 	}
 
 	if (engine2Stopping)
 	{
+		spdlog::warn("Hardware Controller :: Stopping engine 2...");
 		StopEngine(this->engine2SlaveNo, previousEngine2Speed);
 	}
 
 	if (engine1SpeedChanged && engine2SpeedChanged && !engine1Stopping && !engine1Starting && !engine2Stopping && !engine2Starting)
 	{
-		ChangeEnginesSpeed(previousEngine1Speed, previousEngine2Speed);
+		spdlog::warn("Hardware Controller :: Changing both engines speed...");
+		ChangeEnginesSpeed(previousEngine1Speed, previousEngine2Speed, previousEngine1Direction, previousEngine2Direction);
 		return;
 	}
 
 	if (engine1SpeedChanged && !engine1Stopping && !engine1Starting)
 	{
-		ChangeEngineSpeed(this->engine1SlaveNo, previousEngine1Speed);
+		spdlog::warn("Hardware Controller :: Changing engine 1 speed...");
+		ChangeEngineSpeed(this->engine1SlaveNo, previousEngine1Speed, previousEngine1Direction);
 		return;
 	}
 
 	if (engine2SpeedChanged && !engine2Stopping && !engine2Starting)
 	{
-		ChangeEngineSpeed(this->engine2SlaveNo, previousEngine2Speed);
+		spdlog::warn("Hardware Controller :: Changing engine 2 speed...");
+		ChangeEngineSpeed(this->engine2SlaveNo, previousEngine2Speed, previousEngine2Direction);
+		return;
+	}
+
+	if (engine1DirectionChanged && engine2DirectionChanged) 
+	{
+		spdlog::warn("Hardware Controller :: Changing both engines direction...");
+		ChangeEnginesDirection(previousEngine1Speed, previousEngine2Speed);
+		return;
+	}
+
+	if (engine1DirectionChanged)
+	{
+		spdlog::warn("Hardware Controller :: Changing engine 1 direction...");
+		ChangeEngineDirection(this->engine1SlaveNo, previousEngine1Speed);
+		return;
+	}
+
+	if (engine2DirectionChanged)
+	{
+		spdlog::warn("Hardware Controller :: Changing engine 2 direction...");
+		ChangeEngineDirection(this->engine2SlaveNo, previousEngine2Speed);
 		return;
 	}
 }
@@ -282,7 +317,7 @@ void EnginesController::StartEngine(int engineSlaveNo)
 	{
 		double speed = 0;
 		int maxSpeed = engineSpeed;
-		int iterations = 200;
+		int iterations = 100;
 		double velocityStep = (double)maxSpeed / iterations;
 		speed = velocityStep;
 		result = FAS_MoveVelocity(this->portNo, engineSlaveNo, (int)ceil(speed), engineDirection);
@@ -307,29 +342,29 @@ void EnginesController::StartEngines()
 	}
 	else
 	{
-		int speed1 = 0;
-		int speed2 = 0;
+		double speed1 = 0;
+		double speed2 = 0;
 
 		int maxSpeed1 = this->engine1Speed;
 		int maxSpeed2 = this->engine2Speed;
 
-		int iterations = 200;
+		int iterations = 100;
 
-		int velocityStep1 = int(maxSpeed1 / iterations);
-		int velocityStep2 = int(maxSpeed2 / iterations);
+		double velocityStep1 = double(maxSpeed1 / (double)iterations);
+		double velocityStep2 = double(maxSpeed2 / (double)iterations);
 
 		speed1 = velocityStep1;
 		speed2 = velocityStep2;
 
-		result = FAS_MoveVelocity(this->portNo, this->engine1SlaveNo, speed1, this->engine1Direction);
-		result = FAS_MoveVelocity(this->portNo, this->engine2SlaveNo, speed2, this->engine2Direction);
+		result = FAS_MoveVelocity(this->portNo, this->engine1SlaveNo, (int)ceil(speed1), this->engine1Direction);
+		result = FAS_MoveVelocity(this->portNo, this->engine2SlaveNo, (int)ceil(speed2), this->engine2Direction);
 
 		for (int i = 1; i < iterations; i++)
 		{
 			speed1 += velocityStep1;
 			speed2 += velocityStep2;
-			result = FAS_VelocityOverride(this->portNo, this->engine1SlaveNo, speed1);
-			result = FAS_VelocityOverride(this->portNo, this->engine2SlaveNo, speed2);
+			result = FAS_VelocityOverride(this->portNo, this->engine1SlaveNo, (int)ceil(speed1));
+			result = FAS_VelocityOverride(this->portNo, this->engine2SlaveNo, (int)ceil(speed2));
 			Sleep(10);
 		}
 	}
@@ -361,16 +396,16 @@ void EnginesController::StopEngine(int engineSlaveNo, int previousSpeed)
 	}
 	else
 	{
-		int speed = 0;
+		double speed = 0;
 		int maxSpeed = previousSpeed;
-		int iterations = 200;
-		int velocityStep = int(maxSpeed / iterations);
+		int iterations = 100;
+		double velocityStep = double(maxSpeed / (double)iterations);
 		speed = maxSpeed;
 
 		for (int i = 1; i < iterations; i++)
 		{
 			speed -= velocityStep;
-			result = FAS_VelocityOverride(this->portNo, engineSlaveNo, speed);
+			result = FAS_VelocityOverride(this->portNo, engineSlaveNo, (int)ceil(speed));
 			Sleep(10);
 		}
 
@@ -382,23 +417,23 @@ void EnginesController::StopEngines(int previousSpeed1, int previousSpeed2)
 {
 	int result;
 
-	if (!this->engine1EasyStart && !this->engine2EasyStart)
+	if (!this->engine1EasyStop && !this->engine1EasyStop)
 	{
 		result = FAS_MoveStop(this->portNo, this->engine1SlaveNo);
 		result = FAS_MoveStop(this->portNo, this->engine2SlaveNo);
 	}
 	else
 	{
-		int speed1 = 0;
-		int speed2 = 0;
+		double speed1 = 0;
+		double speed2 = 0;
 
 		int maxSpeed1 = previousSpeed1;
 		int maxSpeed2 = previousSpeed2;
 
-		int iterations = 200;
+		int iterations = 100;
 
-		int velocityStep1 = int(maxSpeed1 / iterations);
-		int velocityStep2 = int(maxSpeed2 / iterations);
+		double velocityStep1 = double(maxSpeed1 / (double)iterations);
+		double velocityStep2 = double(maxSpeed2 / (double)iterations);
 
 		speed1 = maxSpeed1;
 		speed2 = maxSpeed2;
@@ -407,8 +442,8 @@ void EnginesController::StopEngines(int previousSpeed1, int previousSpeed2)
 		{
 			speed1 -= velocityStep1;
 			speed2 -= velocityStep2;
-			result = FAS_VelocityOverride(this->portNo, this->engine1SlaveNo, speed1);
-			result = FAS_VelocityOverride(this->portNo, this->engine2SlaveNo, speed2);
+			result = FAS_VelocityOverride(this->portNo, this->engine1SlaveNo, (int)ceil(speed1));
+			result = FAS_VelocityOverride(this->portNo, this->engine2SlaveNo, (int)ceil(speed2));
 			Sleep(10);
 		}
 
@@ -417,7 +452,7 @@ void EnginesController::StopEngines(int previousSpeed1, int previousSpeed2)
 	}
 }
 
-void EnginesController::ChangeEngineSpeed(int engineSlaveNo, int previousSpeed)
+void EnginesController::ChangeEngineSpeed(int engineSlaveNo, int previousSpeed, int previousDirection)
 {
 	int result;
 	int engineSpeed;
@@ -442,6 +477,12 @@ void EnginesController::ChangeEngineSpeed(int engineSlaveNo, int previousSpeed)
 		spdlog::warn("Hardware Controller :: Change engine speed method can be used only when engine is already moving.");
 	}
 
+	if (previousDirection != engineDirection) 
+	{
+		this->ChangeEngineDirection(engineSlaveNo, previousSpeed);
+		return;
+	}
+
 	if (!easyChange)
 	{
 		result = FAS_VelocityOverride(this->portNo, engineSlaveNo, engineSpeed);
@@ -464,13 +505,36 @@ void EnginesController::ChangeEngineSpeed(int engineSlaveNo, int previousSpeed)
 	}
 }
 
-void EnginesController::ChangeEnginesSpeed(int previousSpeed1, int previousSpeed2)
+void EnginesController::ChangeEnginesSpeed(int previousSpeed1, int previousSpeed2, int previousDirection1, int previousDirection2)
 {
 	int result;
 
 	if (this->engine1Speed == 0 || this->engine2Speed == 0)
 	{
 		spdlog::warn("Hardware Controller :: Change engine speed method can be used only when engine is already moving.");
+	}
+
+	if (previousDirection1 != this->engine1Direction && previousDirection2 != this->engine2Direction)
+	{
+		this->ChangeEnginesDirection(previousSpeed1, previousSpeed2);
+		return;
+	}
+
+	if (previousDirection1 != this->engine1Direction || previousDirection2 != this->engine2Direction)
+	{
+		if (previousDirection1 != this->engine1Direction)
+		{
+			this->ChangeEngineDirection(this->engine1SlaveNo, previousSpeed1); 
+			this->ChangeEngineSpeed(this->engine2SlaveNo, previousSpeed2, previousDirection2);
+		}
+
+		if (previousDirection2 != this->engine2Direction)
+		{
+			this->ChangeEngineDirection(this->engine2SlaveNo, previousSpeed2);
+			this->ChangeEngineSpeed(this->engine1SlaveNo, previousSpeed1, previousDirection1);
+		}
+
+		return;
 	}
 
 	if (!this->engine1EasyChange && !this->engine2EasyChange)
@@ -503,4 +567,18 @@ void EnginesController::ChangeEnginesSpeed(int previousSpeed1, int previousSpeed
 			Sleep(10);
 		}
 	}
+}
+
+void EnginesController::ChangeEngineDirection(int engineSlaveNo, int previousSpeed) 
+{
+	this->StopEngine(engineSlaveNo, previousSpeed);
+	Sleep(1500);
+	this->StartEngine(engineSlaveNo);
+}
+
+void EnginesController::ChangeEnginesDirection(int previousSpeed1, int previousSpeed2)
+{ 
+	this->StopEngines(previousSpeed1, previousSpeed2);
+	Sleep(1500);
+	this->StartEngines();
 }

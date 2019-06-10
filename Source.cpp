@@ -66,7 +66,7 @@ public:
 					{ 
 						auto stateUpdate = this->messageParser.ParseToHardwareState(messageString);
 						auto returnedState = this->enginesController->UpdateHardwareState(stateUpdate);
-						//this->powerController->UpdatePowerState(stateUpdate);
+						this->powerController->UpdatePowerState(stateUpdate);
 						this->websocket->write(net::buffer(messageParser.ParseToUpdate(stateUpdate)));
 						break;
 					}

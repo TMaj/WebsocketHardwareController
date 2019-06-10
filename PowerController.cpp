@@ -1,50 +1,63 @@
 #include "PowerController.h"
 
 PowerController::PowerController(std::string portName, int baudrate, boost::asio::io_service* io) : baudrate(baudrate), temperature(0), portName(portName), port(*io)
-{  
-	//port.open(this->portName);
-	//port.set_option(boost::asio::serial_port_base::baud_rate(this->baudrate));
+{
+	try
+	{
+		port.open(this->portName);
+		port.set_option(boost::asio::serial_port_base::baud_rate(this->baudrate));
+		port.set_option(boost::asio::serial_port_base::parity(boost::asio::serial_port_base::parity::none));
+		port.set_option(boost::asio::serial_port_base::stop_bits(boost::asio::serial_port_base::stop_bits::one));
 
-	//auto data = std::string("SOUT1\r");
-	//boost::asio::write(port, boost::asio::buffer(data.c_str(), sizeof(data.c_str())));
-	//std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		auto data = std::string("SOUT1\r");
+		boost::asio::write(port, boost::asio::buffer(data, 10));
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-	//data = std::string("SABC 0\r");
-	//boost::asio::write(port, boost::asio::buffer(data.c_str(), sizeof(data.c_str())));
-	//std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		data = std::string("CURR 00200") + std::string("\r");
+		boost::asio::write(port, boost::asio::buffer(data, sizeof(data)));
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-	//port.close();
+		data = std::string("SABC 0\r");
+		boost::asio::write(port, boost::asio::buffer(data, sizeof(data)));
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+		port.close();
+	}
+	catch (boost::system::system_error e)
+	{
+		spdlog::error("Error in power controller {}", e.what());
+	}
 }
 
 bool PowerController::UpdatePowerState(HardwareState update)
-{ 
-	if (update.DesiredTemperature == temperature) 
+{
+	if (update.DesiredTemperature == temperature)
 	{
 		return true;
 	}
 
-	this->temperature = update.DesiredTemperature; 
+	this->temperature = update.DesiredTemperature;
 
-	try 
-	{    
-		std::thread t([update, this]{ this->SetCurrentAndVoltage(update); });
+	try
+	{
+		std::thread t([this] { this->SetCurrentAndVoltage(); });
 		t.detach();
 
 		return true;
 	}
 	catch (boost::system::system_error e)
-	{ 
+	{
 		spdlog::error("Error in power controller {}", e.what());
 		return false;
-	} 
+	}
 }
 
-int PowerController::CalculateVoltageByTemperature(int temperature)
+double PowerController::CalculateVoltageByTemperature(int temperature)
 {
-	return temperature;
+	return (double)temperature * 0.0256505576;
 }
 
-void PowerController::SetCurrentAndVoltage(HardwareState update)
+void PowerController::SetCurrentAndVoltage()
 {
 	port.open(this->portName);
 	port.set_option(boost::asio::serial_port_base::baud_rate(this->baudrate));
@@ -65,11 +78,7 @@ void PowerController::SetCurrentAndVoltage(HardwareState update)
 	data = std::string("VOLT 0") + str + std::string("\r");
 	auto x = data.c_str();
 	boost::asio::write(port, boost::asio::buffer(data, sizeof(data)));
-	std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-	data = std::string("CURR 00200") + std::string("\r");
-	boost::asio::write(port, boost::asio::buffer(data, sizeof(data)));
-	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	std::this_thread::sleep_for(std::chrono::milliseconds(100)); 
 
 	port.close();
 }

@@ -14,7 +14,7 @@ public:
 	PowerController(std::string portName, int baudrate, boost::asio::io_service* io);
 	bool UpdatePowerState(HardwareState update);
 
-	void SetCurrentAndVoltage(HardwareState update);
+	void SetCurrentAndVoltage();
 private:    
 	boost::asio::serial_port port;
 	//boost::asio::io_service io;
@@ -22,6 +22,6 @@ private:
 	int baudrate;
 	int temperature;
 
-	int CalculateVoltageByTemperature(int temperature);
+	double CalculateVoltageByTemperature(int temperature);
 	
 }; 
